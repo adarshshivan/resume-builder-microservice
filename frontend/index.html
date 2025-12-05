@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Builder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Resume Builder</h1>
+
+    <div id="modeBadge" class="mode-badge">Checking API...</div>
+
+    <div class="container">
+
+        <div class="form-section">
+
+            <h2>Enter Resume Details</h2>
+
+            <label>Email</label>
+            <input type="text" id="email" placeholder="Enter email">
+
+            <label>Name</label>
+            <input type="text" id="name">
+
+            <label>Phone</label>
+            <input type="text" id="phone">
+
+            <label>Professional Summary</label>
+            <textarea id="summary"></textarea>
+
+            <h3>Skills</h3>
+            <input type="text" id="skillInput" placeholder="Add a skill">
+            <button onclick="addSkill()">Add Skill</button>
+            <ul id="skillsList"></ul>
+
+            <h3>Experience</h3>
+            <button onclick="addExperience()">Add Experience</button>
+            <div id="experienceContainer"></div>
+
+            <h3>Education</h3>
+            <button onclick="addEducation()">Add Education</button>
+            <div id="educationContainer"></div>
+
+            <button onclick="saveResume()">Save Resume</button>
+            <button onclick="updateResume()">Update Resume</button>
+            <button onclick="loadResume()">Load Resume</button>
+            <button onclick="downloadResume()">Download PDF</button>
+
+        </div>
+
+        <div class="preview-section">
+            <h2>Live Preview</h2>
+            <div id="preview"></div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
