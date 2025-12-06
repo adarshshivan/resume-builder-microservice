@@ -1,49 +1,79 @@
+// ==========================================
+// CONFIG
+// ==========================================
 const API_BASE = "https://edv4n7mwc3.execute-api.ap-south-1.amazonaws.com/prod";
+let USE_DEMO = false; // auto-detected
 
-let isLiveAPI = false; // global mode flag
-
-// ---------- HEALTH CHECK ----------
-async function checkAPI() {
+// ==========================================
+// HEALTH CHECK — FIXED (uses OPTIONS /resume)
+// ==========================================
+async function checkApiStatus() {
     try {
-        const res = await fetch(`${API_BASE}/resume/__healthcheck__`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
+        const res = await fetch(`${API_BASE}/resume`, {
+            method: "OPTIONS"
         });
 
-        // AWS responds with 404 for fake email = healthy
-        if (res.ok || res.status === 404) {
-            return true;
+        if (res.ok) {
+            USE_DEMO = false;
+            setModeBadge("live");
+            console.log("API Status: LIVE");
+        } else {
+            USE_DEMO = true;
+            setModeBadge("demo");
+            console.log("API Status: DEMO (fallback)");
         }
-        return false;
 
     } catch (err) {
-        return false; // AWS is offline/deleted
+        USE_DEMO = true;
+        setModeBadge("demo");
+        console.log("API unreachable → Demo Mode activated");
     }
 }
 
-function enableLiveMode() {
-    isLiveAPI = true;
+checkApiStatus();
+
+// ==========================================
+// MODE BADGE UI
+// ==========================================
+function setModeBadge(mode) {
     const badge = document.getElementById("modeBadge");
-    badge.textContent = "Live Mode (AWS)";
-    badge.classList.remove("badge-demo");
-    badge.classList.add("badge-live");
+    if (!badge) return;
+
+    if (mode === "live") {
+        badge.innerText = "Live Mode (AWS)";
+        badge.style.background = "#28a745";
+    } else {
+        badge.innerText = "Demo Mode (Local)";
+        badge.style.background = "#dc3545";
+    }
 }
 
-function enableDemoMode() {
-    isLiveAPI = false;
-    const badge = document.getElementById("modeBadge");
-    badge.textContent = "Demo Mode (Local)";
-    badge.classList.remove("badge-live");
-    badge.classList.add("badge-demo");
+// ==========================================
+// DEMO STORAGE (only used if AWS offline)
+// ==========================================
+let demoStorage = {};
+
+async function demoSave(data) {
+    demoStorage[data.email] = data;
+    return { message: "Saved (Demo Mode)" };
 }
 
-// Initialize mode on load
-(async () => {
-    const healthy = await checkAPI();
-    healthy ? enableLiveMode() : enableDemoMode();
-})();
+async function demoUpdate(data) {
+    demoStorage[data.email] = data;
+    return { message: "Updated (Demo Mode)" };
+}
 
-// ---------- SKILLS ----------
+async function demoLoad(email) {
+    return demoStorage[email] || {};
+}
+
+async function demoDownload(email) {
+    return { download_url: "https://example.com/demo.pdf" };
+}
+
+// ==========================================
+// SKILLS
+// ==========================================
 let skills = [];
 
 function addSkill() {
@@ -76,7 +106,9 @@ function renderSkills() {
     });
 }
 
-// ---------- EXPERIENCE ----------
+// ==========================================
+// EXPERIENCE
+// ==========================================
 let experience = [];
 
 function addExperience() {
@@ -106,7 +138,9 @@ function addExperience() {
     container.appendChild(div);
 }
 
-// ---------- EDUCATION ----------
+// ==========================================
+// EDUCATION
+// ==========================================
 let education = [];
 
 function addEducation() {
@@ -130,7 +164,9 @@ function addEducation() {
     container.appendChild(div);
 }
 
-// ---------- PREVIEW ----------
+// ==========================================
+// LIVE PREVIEW
+// ==========================================
 function renderPreview() {
     const preview = document.getElementById("preview");
 
@@ -139,6 +175,7 @@ function renderPreview() {
     const email = document.getElementById("email").value;
     const summary = document.getElementById("summary").value;
 
+    // Experience
     const expBlocks = document.querySelectorAll(".experience-block");
     experience = [];
     expBlocks.forEach(block => {
@@ -151,6 +188,7 @@ function renderPreview() {
         });
     });
 
+    // Education
     const eduBlocks = document.querySelectorAll(".education-block");
     education = [];
     eduBlocks.forEach(block => {
@@ -190,46 +228,79 @@ function renderPreview() {
 
 document.addEventListener("input", renderPreview);
 
-// ---------- SAVE ----------
-async function saveResume() {
-    if (!isLiveAPI) return alert("Demo Mode: Saving disabled");
+// ==========================================
+// COLLECT DATA
+// ==========================================
+function collectResumeData() {
+    return {
+        email: document.getElementById("email").value,
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        summary: document.getElementById("summary").value,
+        skills,
+        experience,
+        education
+    };
+}
 
+// ==========================================
+// SAVE RESUME
+// ==========================================
+async function saveResume() {
     const payload = collectResumeData();
 
-    const response = await fetch(`${API_BASE}/resume`, {
+    if (USE_DEMO) {
+        const r = await demoSave(payload);
+        alert(r.message);
+        return;
+    }
+
+    const res = await fetch(`${API_BASE}/resume`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
-    alert(result.message || "Saved");
+    const data = await res.json();
+    alert(data.message || "Saved");
 }
 
-// ---------- UPDATE ----------
+// ==========================================
+// UPDATE RESUME
+// ==========================================
 async function updateResume() {
-    if (!isLiveAPI) return alert("Demo Mode: Updating disabled");
-
     const payload = collectResumeData();
 
-    const response = await fetch(`${API_BASE}/resume/${payload.email}`, {
+    if (USE_DEMO) {
+        const r = await demoUpdate(payload);
+        alert(r.message);
+        return;
+    }
+
+    const res = await fetch(`${API_BASE}/resume/${payload.email}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
-    alert(result.message || "Updated");
+    const data = await res.json();
+    alert(data.message || "Updated");
 }
 
-// ---------- LOAD ----------
+// ==========================================
+// LOAD RESUME
+// ==========================================
 async function loadResume() {
-    if (!isLiveAPI) return alert("Demo Mode: Loading disabled");
-
     const email = document.getElementById("email").value;
 
-    const response = await fetch(`${API_BASE}/resume/${email}`);
-    const data = await response.json();
+    let data;
+
+    if (USE_DEMO) {
+        data = await demoLoad(email);
+    } else {
+        const res = await fetch(`${API_BASE}/resume/${email}`);
+        data = await res.json();
+    }
 
     document.getElementById("name").value = data.name || "";
     document.getElementById("phone").value = data.phone || "";
@@ -261,30 +332,24 @@ async function loadResume() {
     renderPreview();
 }
 
-// ---------- DOWNLOAD PDF ----------
+// ==========================================
+// DOWNLOAD PDF
+// ==========================================
 async function downloadResume() {
-    if (!isLiveAPI) return alert("Demo Mode: PDF disabled");
-
     const email = document.getElementById("email").value;
 
-    const response = await fetch(`${API_BASE}/resume/${email}/download`);
-    const data = await response.json();
+    let data;
+
+    if (USE_DEMO) {
+        data = await demoDownload(email);
+    } else {
+        const res = await fetch(`${API_BASE}/resume/${email}/download`);
+        data = await res.json();
+    }
 
     if (data.download_url) {
         window.open(data.download_url, "_blank");
     } else {
         alert("Error generating PDF");
     }
-}
-
-function collectResumeData() {
-    return {
-        email: document.getElementById("email").value,
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        summary: document.getElementById("summary").value,
-        skills: skills,
-        experience: experience,
-        education: education
-    };
 }
