@@ -8,6 +8,24 @@ h1 {
     text-align: center;
 }
 
+.mode-badge {
+    text-align: center;
+    margin: 10px auto;
+    padding: 8px 20px;
+    border-radius: 20px;
+    width: fit-content;
+    font-weight: bold;
+    color: white;
+}
+
+.mode-live {
+    background: #28a745;
+}
+
+.mode-demo {
+    background: #dc3545;
+}
+
 .container {
     display: flex;
     gap: 20px;
@@ -46,25 +64,4 @@ button:hover {
 .preview-section {
     overflow-y: auto;
     max-height: 600px;
-}
-
-/* MODE BADGE */
-.mode-badge {
-    text-align: center;
-    padding: 8px 16px;
-    border-radius: 20px;
-    margin: 10px auto;
-    width: fit-content;
-    font-weight: bold;
-    color: white;
-}
-
-/* GREEN (AWS LIVE) */
-.badge-live {
-    background: #28a745;
-}
-
-/* RED (DEMO MODE) */
-.badge-demo {
-    background: #dc3545;
 }
